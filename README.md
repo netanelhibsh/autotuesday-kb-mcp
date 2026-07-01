@@ -64,6 +64,7 @@ AT_KB_REFRESH_TOKEN=<token מדף "חבר את המחשב" בפורטל>
 | `kb_write` | יצירה (בלי id) / עדכון (עם id). visibility: org/workspace/private |
 | `kb_history` | רשימת גרסאות של פריט |
 | `kb_rollback` | החזרה לגרסה קודמת (עצמה מגורסאת — אפס איבוד) |
+| `kb_changes` | feed שינויים: מי יצר/ערך מה ומתי (ייחוס). סינון לפי workspace |
 | `workspaces_list` | הפרויקטים שיש לי גישה אליהם |
 
 ## kb sync — מראה מקומית (cache)

@@ -235,6 +235,55 @@ server.tool(
   },
 );
 
+// recent changes across the KB, with attribution — "what changed in X, by whom, when"
+server.tool(
+  "kb_changes",
+  "Recent activity feed: who created/edited which KB items, and when. Optionally filter by workspace slug (e.g. 'benyamin'). Answers 'what did my partner change while I was away'.",
+  {
+    workspace: z.string().optional().describe("workspace slug to filter (e.g. benyamin)"),
+    limit: z.number().int().min(1).max(100).default(30),
+  },
+  async ({ workspace, limit }) => {
+    let wsId: string | null = null;
+    if (workspace) {
+      const { data: w } = await sb.from("workspaces").select("id").eq("slug", workspace).maybeSingle();
+      if (!w) return fail(`workspace '${workspace}' not found or not visible to you`);
+      wsId = w.id;
+    }
+    const { data: edits, error: e1 } = await sb
+      .from("kb_item_history")
+      .select("at, version, edited_by, item:kb_items(title, workspace_id)")
+      .order("at", { ascending: false })
+      .limit(limit * 2);
+    if (e1) return fail(e1.message);
+    const { data: creates, error: e2 } = await sb
+      .from("kb_items")
+      .select("title, created_at, owner_id, workspace_id")
+      .order("created_at", { ascending: false })
+      .limit(limit * 2);
+    if (e2) return fail(e2.message);
+
+    type Row = { type: string; at: string; by: string | null; item: string; workspace_id: string | null; version?: number };
+    let feed: Row[] = [
+      ...(edits ?? []).map((r: any) => ({ type: "edit", at: r.at, by: r.edited_by, item: r.item?.title ?? "?", workspace_id: r.item?.workspace_id ?? null, version: r.version })),
+      ...(creates ?? []).map((r: any) => ({ type: "create", at: r.created_at, by: r.owner_id, item: r.title, workspace_id: r.workspace_id ?? null })),
+    ];
+    if (wsId) feed = feed.filter((x) => x.workspace_id === wsId);
+    feed.sort((a, b) => (a.at < b.at ? 1 : -1));
+    feed = feed.slice(0, limit);
+
+    // resolve editor/owner ids -> names (SECURITY DEFINER rpc, bypasses strict people RLS)
+    const ids = [...new Set(feed.map((f) => f.by).filter(Boolean))] as string[];
+    const nameById: Record<string, string> = {};
+    if (ids.length) {
+      const { data: names } = await sb.rpc("people_names", { p_ids: ids });
+      for (const n of names ?? []) nameById[n.id] = n.name ?? "?";
+    }
+    const out = feed.map((f) => ({ when: f.at, who: f.by ? nameById[f.by] ?? "מערכת/הזנה" : "מערכת/הזנה", action: f.type, item: f.item, ...(f.version ? { version: f.version } : {}) }));
+    return ok(out);
+  },
+);
+
 // list workspaces (projects) you belong to / may see
 server.tool(
   "workspaces_list",
