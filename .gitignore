@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+.autotuesday-kb-session.json
+.DS_Store
+
+ingest.mjs
+e2e-test.mjs
