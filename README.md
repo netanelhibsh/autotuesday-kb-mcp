@@ -66,6 +66,13 @@ AT_KB_REFRESH_TOKEN=<token מדף "חבר את המחשב" בפורטל>
 | `kb_rollback` | החזרה לגרסה קודמת (עצמה מגורסאת — אפס איבוד) |
 | `workspaces_list` | הפרויקטים שיש לי גישה אליהם |
 
+## kb sync — מראה מקומית (cache)
+`node kb-sync.mjs` מושך את כל מה שמותר לך לראות (RLS) ל-`~/autotuesday-kb/` — מראה
+מקומית של המאגר. **Supabase = מקור האמת; התיקייה הזו = cache לקריאה.** משתמש חוזר
+ב-session של ה-MCP (אין התחברות נוספת). מומלץ להריץ בתחילת עבודה כדי להיות מסונכרן.
+env אופציונלי: `AT_KB_CACHE_DIR` (ברירת מחדל `~/autotuesday-kb`).
+> כתיבה/עדכון → דרך כלי ה-MCP (`kb_write`), לא עריכת קבצי ה-cache ידנית.
+
 ## עקרון אבטחה
 כל הכלים רצים דרך client מאומת כשותף. **RLS ב-Supabase** אוכף org/workspace/private
 פר-שורה. השרת לא מחליט הרשאות — רק מעביר את הזהות. זה מה ש-production-build-standard
