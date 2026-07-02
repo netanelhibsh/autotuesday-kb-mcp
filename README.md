@@ -66,6 +66,8 @@ AT_KB_REFRESH_TOKEN=<token מדף "חבר את המחשב" בפורטל>
 | `kb_rollback` | החזרה לגרסה קודמת (עצמה מגורסאת — אפס איבוד) |
 | `kb_changes` | feed שינויים: מי יצר/ערך מה ומתי (ייחוס). סינון לפי workspace |
 | `workspaces_list` | הפרויקטים שיש לי גישה אליהם |
+| `page_write` | פרסום דף שיתופי ב-`/p/<slug>` (HTML ב-Supabase, בלי deploy). draft/published |
+| `page_list` | רשימת הדפים שפרסמת + כתובות |
 
 ## kb sync — מראה מקומית (cache)
 `node kb-sync.mjs` מושך את כל מה שמותר לך לראות (RLS) ל-`~/autotuesday-kb/` — מראה

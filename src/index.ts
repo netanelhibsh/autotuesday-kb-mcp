@@ -298,6 +298,53 @@ server.tool(
   },
 );
 
+// publish a shareable web page (served at /p/<slug>) — HTML in Supabase, no repo/deploy
+server.tool(
+  "page_write",
+  "Create/update a shareable web page served at https://app.autotuesday.com/p/<slug> (HTML stored in Supabase, no deploy). " +
+    "status: 'draft' (only you/admins, or ?preview=<slug>) or 'published' (public URL). Use for proposals/landing pages/decks.",
+  {
+    slug: z.string().regex(/^[a-z0-9-]+$/, "lowercase letters, digits, hyphens only").describe("URL slug, e.g. benyamin-proposal"),
+    title: z.string(),
+    html: z.string().describe("full HTML document"),
+    status: z.enum(["draft", "published"]).default("draft"),
+    workspace: z.string().optional().describe("workspace slug to attach (e.g. benyamin)"),
+  },
+  async ({ slug, title, html, status, workspace }) => {
+    let wsId: string | null = null;
+    if (workspace) {
+      const { data: w } = await sb.from("workspaces").select("id").eq("slug", workspace).maybeSingle();
+      wsId = w?.id ?? null;
+    }
+    const url = `https://app.autotuesday.com/p/${slug}`;
+    const { data: ex } = await sb.from("pages").select("id").eq("slug", slug).maybeSingle();
+    if (ex) {
+      const { error } = await sb
+        .from("pages")
+        .update({ title, html, status, workspace_id: wsId, updated_at: new Date().toISOString() })
+        .eq("id", ex.id);
+      return error ? fail(error.message) : ok({ updated: slug, url, status });
+    }
+    const { error } = await sb.from("pages").insert({ slug, title, html, status, workspace_id: wsId, owner_id: personId });
+    return error ? fail(error.message) : ok({ created: slug, url, status });
+  },
+);
+
+// list pages you can manage
+server.tool(
+  "page_list",
+  "List shareable pages you can see (yours + published), with their status and URL.",
+  {},
+  async () => {
+    const { data, error } = await sb
+      .from("pages")
+      .select("slug, title, status, updated_at")
+      .order("updated_at", { ascending: false });
+    if (error) return fail(error.message);
+    return ok((data ?? []).map((p: any) => ({ ...p, url: `https://app.autotuesday.com/p/${p.slug}` })));
+  },
+);
+
 async function main() {
   await ensureAuth();
   const transport = new StdioServerTransport();
